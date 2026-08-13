@@ -104,8 +104,8 @@ idx_pair* get_idx_pair(snp_data* ref, snp_data* cmp) {
 	pair->ref_idx = (struct idx_head*)malloc(sizeof(struct idx_head));
 	pair->elm_idx = (struct idx_head*)malloc(sizeof(struct idx_head));
 
-	STAILQ_INIT(pair->ref_idx);
-	STAILQ_INIT(pair->elm_idx);
+	TAILQ_INIT(pair->ref_idx);
+	TAILQ_INIT(pair->elm_idx);
 	intersect_snp_data(ref, cmp, pair->ref_idx, pair->elm_idx);
 	return pair;
 }
@@ -137,7 +137,7 @@ void print_isct(idx_intersect* isct) {
 		printf("Index %u:\n", i);
 		printf("\tIDX:");
 		struct idx_node* in;
-		STAILQ_FOREACH(in, isct->ip[i]->ref_idx, nodes) {
+		TAILQ_FOREACH(in, isct->ip[i]->ref_idx, nodes) {
 			printf(" %u", in->idx);
 		}
 		printf("\n");
@@ -149,8 +149,8 @@ void make_intersection(idx_intersect* isct) {
 	struct idx_node** cur_nodes_ref = (struct idx_node**)malloc(isct->length * sizeof(struct idx_node*));
 	struct idx_node** cur_nodes_elm = (struct idx_node**)malloc(isct->length * sizeof(struct idx_node*));
 	for(size_t i = 0; i < isct->length; i++) {
-		cur_nodes_ref[i] = STAILQ_FIRST(isct->ip[i]->ref_idx);
-		cur_nodes_elm[i] = STAILQ_FIRST(isct->ip[i]->elm_idx);
+		cur_nodes_ref[i] = TAILQ_FIRST(isct->ip[i]->ref_idx);
+		cur_nodes_elm[i] = TAILQ_FIRST(isct->ip[i]->elm_idx);
 	}
 
 	print_isct(isct);
@@ -159,32 +159,32 @@ void make_intersection(idx_intersect* isct) {
 		// if all the nodes are equal then move on to the next elements
 		if(all_equal(cur_nodes_ref, isct->length)) {
 			for(size_t i = 0; i < isct->length; i++) {
-				struct idx_node* next_node_ref = STAILQ_NEXT(cur_nodes_ref[i], nodes);
-				struct idx_node* next_node_elm = STAILQ_NEXT(cur_nodes_elm[i], nodes);
+				struct idx_node* next_node_ref = TAILQ_NEXT(cur_nodes_ref[i], nodes);
+				struct idx_node* next_node_elm = TAILQ_NEXT(cur_nodes_elm[i], nodes);
 				// if this is the last element then remove all elements after this current one from the lists
 				if(next_node_ref == NULL) {
 					for(size_t j = i + 1; j < isct->length; j++) {
-						struct idx_node* nxt_r = STAILQ_NEXT(cur_nodes_ref[j], nodes);
-						struct idx_node* nxt_e = STAILQ_NEXT(cur_nodes_elm[j], nodes);
+						struct idx_node* nxt_r = TAILQ_NEXT(cur_nodes_ref[j], nodes);
+						struct idx_node* nxt_e = TAILQ_NEXT(cur_nodes_elm[j], nodes);
 						while(nxt_r) {
-							STAILQ_REMOVE(isct->ip[j]->ref_idx, nxt_r, idx_node, nodes);
-							STAILQ_REMOVE(isct->ip[j]->elm_idx, nxt_e, idx_node, nodes);
+							TAILQ_REMOVE(isct->ip[j]->ref_idx, nxt_r, nodes);
+							TAILQ_REMOVE(isct->ip[j]->elm_idx, nxt_e, nodes);
 							free(nxt_r);
 							free(nxt_e);
-							nxt_r = STAILQ_NEXT(cur_nodes_ref[j], nodes);
-							nxt_e = STAILQ_NEXT(cur_nodes_elm[j], nodes);
+							nxt_r = TAILQ_NEXT(cur_nodes_ref[j], nodes);
+							nxt_e = TAILQ_NEXT(cur_nodes_elm[j], nodes);
 						}
 					}
 					for(size_t j = 0; j < i; j++) {
 						struct idx_node* nxt_r = cur_nodes_ref[j];
 						struct idx_node* nxt_e = cur_nodes_elm[j];
 						while(nxt_r) {
-							STAILQ_REMOVE(isct->ip[j]->ref_idx, nxt_r, idx_node, nodes);
-							STAILQ_REMOVE(isct->ip[j]->elm_idx, nxt_e, idx_node, nodes);
+							TAILQ_REMOVE(isct->ip[j]->ref_idx, nxt_r, nodes);
+							TAILQ_REMOVE(isct->ip[j]->elm_idx, nxt_e, nodes);
 							cur_nodes_ref[j] = nxt_r;
 							cur_nodes_elm[j] = nxt_e;
-							nxt_r = STAILQ_NEXT(nxt_r, nodes);
-							nxt_e = STAILQ_NEXT(nxt_e, nodes);
+							nxt_r = TAILQ_NEXT(nxt_r, nodes);
+							nxt_e = TAILQ_NEXT(nxt_e, nodes);
 							free(cur_nodes_ref[j]);
 							free(cur_nodes_elm[j]);
 						}
@@ -204,10 +204,10 @@ void make_intersection(idx_intersect* isct) {
 				if(i == max_i) { continue; }
 				if(cur_nodes_ref[i]->idx == cur_nodes_ref[max_i]->idx) { continue; }
 				// remove and move to the next one
-				struct idx_node* next_node_ref = STAILQ_NEXT(cur_nodes_ref[i], nodes);
-				struct idx_node* next_node_elm = STAILQ_NEXT(cur_nodes_elm[i], nodes);
-				STAILQ_REMOVE(isct->ip[i]->ref_idx, cur_nodes_ref[i], idx_node, nodes);
-				STAILQ_REMOVE(isct->ip[i]->elm_idx, cur_nodes_elm[i], idx_node, nodes);
+				struct idx_node* next_node_ref = TAILQ_NEXT(cur_nodes_ref[i], nodes);
+				struct idx_node* next_node_elm = TAILQ_NEXT(cur_nodes_elm[i], nodes);
+				TAILQ_REMOVE(isct->ip[i]->ref_idx, cur_nodes_ref[i], nodes);
+				TAILQ_REMOVE(isct->ip[i]->elm_idx, cur_nodes_elm[i], nodes);
 				free(cur_nodes_ref[i]);
 				free(cur_nodes_elm[i]);
 				// if one of the next nodes is empty list and free elements for all of them, there is no intersection
