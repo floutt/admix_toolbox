@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <dotgeno.h>
 
 char** str_split(char* str, char delim, size_t* n_elems) {
 	size_t str_len = strlen(str);
@@ -81,9 +82,7 @@ void write_snp_and_ind(FILE* f_vcf, char* snp_file, char* ind_file, char** ind_p
 		free(elems[i]);
 	}
 	free(elems);
-
 	// write snp
-	// COMPLETE
 	FILE* f_snp = fopen(snp_file, "w+");
 	while ((nread = getline(&line, &size, f_vcf)) != -1) {
 		line[nread - 1] = '\0';
@@ -109,6 +108,7 @@ void write_snp_and_ind(FILE* f_vcf, char* snp_file, char* ind_file, char** ind_p
 			free(elems);
 			continue;
 		}
+
 		// if not rsid then change snp_id
 		if(strncmp("rs", snp_id, 2) != 0) {
 			snp_id = (char*)malloc(sizeof(char) * (strlen("SNP") + strlen(chrom) + strlen(pos) + 3));
@@ -124,4 +124,103 @@ void write_snp_and_ind(FILE* f_vcf, char* snp_file, char* ind_file, char** ind_p
 	fclose(f_snp);
 	// free
 	free(line);
+}
+
+void write_geno(FILE* f_vcf, char* snp_file, char* ind_file, char* geno_file) {
+	// go to beginning of file
+	fseek(f_vcf, 0, SEEK_SET);
+	ind_data ind = read_ind_file(ind_file);
+	snp_data snp = read_snp_file(snp_file);
+	
+	char* line = NULL;
+	size_t size = 0;
+	ssize_t nread;
+
+	pam_file_writer pfw = pam_file_writer_init(geno_file, &snp, &ind);
+	write_pam_header(&pfw, &snp, &ind);
+	while ((nread = getline(&line, &size, f_vcf)) != -1) {
+		line[nread - 1] = '\0';
+		if(line[0] == '#') { continue; }
+		size_t n_elems;
+		char** elems = str_split(line, '\t', &n_elems);
+		if((n_elems - 9) != ind.length) {
+			fprintf(stderr, "ERROR: invalid number of individuals provided in VCF reecord. Expected %zu, got %zu\n", n_elems - 9, ind.length);
+			exit(EXIT_FAILURE);
+		}
+
+		bool is_multi_allele = false;
+		char* alt =  elems[4];
+		size_t len_alt = strlen(alt);
+		for(size_t i = 0; i < len_alt; i++) {
+			if(alt[i] == ',') {
+				is_multi_allele = true;
+				break;
+			}
+		}
+		if(is_multi_allele) {
+			for(size_t i = 0; i < n_elems; i++) {
+				free(elems[i]);
+			}
+			free(elems);
+			continue;
+		}
+		// get GT num
+		size_t n_fmt;
+		size_t gt_pos;
+		bool found_gt = false;
+		char** fmt_str_split = str_split(elems[8], ':', &n_fmt);
+		for(size_t i = 0; i < n_fmt; i++) {
+			if(strcmp(fmt_str_split[i], "GT") == 0) {
+				found_gt = true;
+				gt_pos = i;
+				break;
+			}
+		}
+		for(size_t i = 0; i < n_fmt; i++) {
+			free(fmt_str_split[i]);
+		}
+		free(fmt_str_split);
+
+		if(!found_gt) {
+			fprintf(stderr, "ERROR: GT not found in row.\n");
+			exit(EXIT_FAILURE);
+		}
+
+		uint8_t* record = (uint8_t*)malloc(sizeof(uint8_t) * ind.length);
+		for(size_t i = 9; i < n_elems; i++) {
+			char* samp_str = elems[i];
+			char** samp_str_split = str_split(samp_str, ':', &n_fmt);
+			char* gt_str = samp_str_split[gt_pos];
+			uint8_t dosage;
+			if((strcmp("0/0", gt_str) == 0) || (strcmp("0|0", gt_str) == 0)) {
+				dosage = 2;
+			} else if((strcmp("1/1", gt_str) == 0) || (strcmp("1|1", gt_str) == 0)) {
+				dosage = 0;
+			} else if((strcmp("1/0", gt_str) == 0) || (strcmp("1|0", gt_str) == 0) || (strcmp("0/1", gt_str) == 0) || (strcmp("0|1", gt_str) == 0)) {
+				dosage = 1;
+			} else if((strcmp("./.", gt_str) == 0) || (strcmp(".", gt_str) == 0)) {
+				dosage = NAN_VAL;
+			} else {
+				fprintf(stderr, "ERROR: invalid value '%s' in sample column of VCF.\n", gt_str);
+				exit(EXIT_FAILURE);
+			}
+			record[i - 9] = dosage;
+
+			// free samp_str_split
+			for(size_t j = 0; j < n_fmt; j++) {
+				free(samp_str_split[j]);
+			}
+			free(samp_str_split);
+		}
+		write_pam_record(&pfw, record);
+		free(record);
+		for(size_t i = 0; i < n_elems; i++) {
+			free(elems[i]);
+		}
+		free(elems);
+	}
+	free(line);
+	close_pam_file_writer(&pfw);
+	free_ind_data(&ind);
+	free_snp_data(&snp);
 }
