@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <inttypes.h>
 #include <dotgeno.h>
 
 char** str_split(char* str, char delim, size_t* n_elems) {
@@ -126,25 +127,23 @@ void write_snp_and_ind(FILE* f_vcf, char* snp_file, char* ind_file, char** ind_p
 	free(line);
 }
 
-void write_geno(FILE* f_vcf, char* snp_file, char* ind_file, char* geno_file) {
+void write_geno(FILE* f_vcf, snp_data* snp, ind_data* ind, char* geno_file) {
 	// go to beginning of file
 	fseek(f_vcf, 0, SEEK_SET);
-	ind_data ind = read_ind_file(ind_file);
-	snp_data snp = read_snp_file(snp_file);
 	
 	char* line = NULL;
 	size_t size = 0;
 	ssize_t nread;
 
-	pam_file_writer pfw = pam_file_writer_init(geno_file, &snp, &ind);
-	write_pam_header(&pfw, &snp, &ind);
+	pam_file_writer pfw = pam_file_writer_init(geno_file, snp, ind);
+	write_pam_header(&pfw, snp, ind);
 	while ((nread = getline(&line, &size, f_vcf)) != -1) {
 		line[nread - 1] = '\0';
 		if(line[0] == '#') { continue; }
 		size_t n_elems;
 		char** elems = str_split(line, '\t', &n_elems);
-		if((n_elems - 9) != ind.length) {
-			fprintf(stderr, "ERROR: invalid number of individuals provided in VCF reecord. Expected %zu, got %zu\n", n_elems - 9, ind.length);
+		if((n_elems - 9) != ind->length) {
+			fprintf(stderr, "ERROR: invalid number of individuals provided in VCF reecord. Expected %zu, got %zu\n", n_elems - 9, ind->length);
 			exit(EXIT_FAILURE);
 		}
 
@@ -186,7 +185,7 @@ void write_geno(FILE* f_vcf, char* snp_file, char* ind_file, char* geno_file) {
 			exit(EXIT_FAILURE);
 		}
 
-		uint8_t* record = (uint8_t*)malloc(sizeof(uint8_t) * ind.length);
+		uint8_t* record = (uint8_t*)malloc(sizeof(uint8_t) * ind->length);
 		for(size_t i = 9; i < n_elems; i++) {
 			char* samp_str = elems[i];
 			char** samp_str_split = str_split(samp_str, ':', &n_fmt);
@@ -221,6 +220,50 @@ void write_geno(FILE* f_vcf, char* snp_file, char* ind_file, char* geno_file) {
 	}
 	free(line);
 	close_pam_file_writer(&pfw);
-	free_ind_data(&ind);
-	free_snp_data(&snp);
+}
+
+void write_vcf(pam_file_reader* pfr, char* out_vcf, snp_data* snp, ind_data* ind) {
+	FILE* f_out = fopen(out_vcf, "w+");
+	uint8_t* record;
+	fprintf(f_out, "##fileformat=VCFv4.2\n");
+	fprintf(f_out, "##FILTER=<ID=PASS,Description=\"All filters passed\">\n");
+	fprintf(f_out, "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n");
+	char* last_chr = NULL;
+	// assumes SNP is sorted by chr
+	for(size_t i = 0; i < snp->length; i++) {
+		if((last_chr == NULL) || (strcmp(last_chr, snp->chr[i]) != 0)) {
+			fprintf(f_out, "##contig=<ID=%s>\n", snp->chr[i]);
+			last_chr = snp->chr[i];
+		}
+	}
+	fprintf(f_out, "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t");
+	for(size_t i = 0; i < ind->length; i++) {
+		fprintf(f_out, "%s", ind->ind_id[i]);
+		if(i == (ind->length - 1)) { fprintf(f_out, "\n"); }
+		else { fprintf(f_out, "\t"); }
+	}
+
+	while(record = read_pam_record(pfr)) {
+		size_t idx = pfr->idx - 1;
+		fprintf(f_out, "%s\t%" PRId64 "\t%s\t%s\t%s\t%s\t%s\t%s", snp->chr[idx], snp->pos[idx], snp->var_id[idx], snp->ref[idx], snp->alt[idx], "999", "PASS", ".", "GT");
+		for(size_t i = 0; i < pfr->n_ind; i++) {
+			switch(record[i]) {
+				case 0:
+					fprintf(f_out, "\t1/1");
+					break;
+				case 1:
+					fprintf(f_out, "\t0/1");
+					break;
+				case 2:
+					fprintf(f_out, "\t0/0");
+					break;
+				case NAN_VAL:
+					fprintf(f_out, "\t./.");
+					break;
+			}
+		}
+		free(record);
+		fprintf(f_out, "\n");
+	}
+	fclose(f_out);
 }
