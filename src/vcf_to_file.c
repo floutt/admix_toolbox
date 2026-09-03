@@ -51,7 +51,7 @@ void write_snp_and_ind(FILE* f_vcf, char* snp_file, char* ind_file, char** ind_p
 	
 	// write ind
 	char chr[7] = "#CHROM";
-	char *line = NULL;
+	char* line = NULL;
 	size_t size = 0;
 	ssize_t nread;
 	while ((nread = getline(&line, &size, f_vcf)) != -1) {
@@ -62,6 +62,7 @@ void write_snp_and_ind(FILE* f_vcf, char* snp_file, char* ind_file, char** ind_p
 			break;
 		}
 	}
+	line[nread - 1] = '\0';
 	size_t n_elems;
 	char** elems = str_split(line, '\t', &n_elems);
 	if((n_elems - 9) != ind_len) {
@@ -70,10 +71,10 @@ void write_snp_and_ind(FILE* f_vcf, char* snp_file, char* ind_file, char** ind_p
 	}
 
 	FILE* f_ind = fopen(ind_file, "w+");
-	for(size_t i = 10; i < n_elems; i++) {
+	for(size_t i = 9; i < n_elems; i++) {
 		char* sex = "U";
-		if(ind_sex) { sex = ind_sex[i]; }
-		fprintf(f_ind, "%s\t%s\t%s\n", elems[i], sex, ind_pop[i]);
+		if(ind_sex) { sex = ind_sex[i-9]; }
+		fprintf(f_ind, "%s\t%s\t%s\n", elems[i], sex, ind_pop[i-9]);
 	}
 	fclose(f_ind);
 	for(size_t i = 0; i < n_elems; i++) {
@@ -85,12 +86,42 @@ void write_snp_and_ind(FILE* f_vcf, char* snp_file, char* ind_file, char** ind_p
 	// COMPLETE
 	FILE* f_snp = fopen(snp_file, "w+");
 	while ((nread = getline(&line, &size, f_vcf)) != -1) {
+		line[nread - 1] = '\0';
 		elems = str_split(line, '\t', &n_elems);
 		char* chrom = elems[0];
 		char* pos = elems[1];
+		char* snp_id = elems[2];
 		char* ref = elems[3];
 		char* alt = elems[4];
+		// skip if multiallelic
+		bool is_multi_allele = false;
+		size_t len_alt = strlen(alt);
+		for(size_t i = 0; i < len_alt; i++) {
+			if(alt[i] == ',') {
+				is_multi_allele = true;
+				break;
+			}
+		}
+		if(is_multi_allele) {
+			for(size_t i = 0; i < n_elems; i++) {
+				free(elems[i]);
+			}
+			free(elems);
+			continue;
+		}
+		// if not rsid then change snp_id
+		if(strncmp("rs", snp_id, 2) != 0) {
+			snp_id = (char*)malloc(sizeof(char) * (strlen("SNP") + strlen(chrom) + strlen(pos) + 3));
+			sprintf(snp_id, "snp_%s_%s", chrom, pos);
+		}
+		fprintf(f_snp, "%s\t%s\t%s\t%s\t%s\t%s\n", snp_id, chrom, "0.0", pos, ref, alt);
+		if(strncmp("snp", snp_id, 3) == 0) { free(snp_id); } 
+		for(size_t i = 0; i < n_elems; i++) {
+			free(elems[i]);
+		}
+		free(elems);
 	}
+	fclose(f_snp);
 	// free
 	free(line);
 }
