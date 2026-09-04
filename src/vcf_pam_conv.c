@@ -7,7 +7,8 @@
 #include <dotgeno.h>
 
 #define PAM_STR_BUF_EXTRA 6
-#define VCF_SAMP_ADJ(x) (x - 9)
+#define VCF_SAMP_POS 9
+#define VCF_SAMP_ADJ(x) (x - VCF_SAMP_POS)
 
 char** str_split(char* str, char delim, size_t* n_elems) {
 	size_t str_len = strlen(str);
@@ -77,7 +78,7 @@ void write_snp_and_ind(FILE* f_vcf, char* snp_file, char* ind_file, char** ind_p
 	}
 
 	FILE* f_ind = fopen(ind_file, "w+");
-	for(size_t i = 9; i < n_elems; i++) {
+	for(size_t i = VCF_SAMP_POS; i < n_elems; i++) {
 		char* sex = "U";
 		if(ind_sex) { sex = ind_sex[VCF_SAMP_ADJ(i)]; }
 		fprintf(f_ind, "%s\t%s\t%s\n", elems[i], sex, ind_pop[VCF_SAMP_ADJ(i)]);
@@ -190,7 +191,7 @@ void write_geno(FILE* f_vcf, snp_data* snp, ind_data* ind, char* geno_file) {
 		}
 
 		uint8_t* record = (uint8_t*)malloc(sizeof(uint8_t) * ind->length);
-		for(size_t i = 9; i < n_elems; i++) {
+		for(size_t i = VCF_SAMP_POS; i < n_elems; i++) {
 			char* samp_str = elems[i];
 			char** samp_str_split = str_split(samp_str, ':', &n_fmt);
 			char* gt_str = samp_str_split[gt_pos];
