@@ -458,8 +458,18 @@ void free_combined_files(combined_files* file_info) {
 	free_gsf(file_info->pam, file_info->length);
 }
 
-void print_help() {
-	printf("Future help message here\n");
+void print_help(char* program) {
+	printf("Usage: '%s [OPTIONS] --prefixes [PREFIX] --out [OUTFILE]' or '%s [OPTIONS] --pams [GENOFILES] --snps [SNPFILES] --inds [INDFILES] --out [OUTFILE]'\n", program, program);
+    printf("Options:\n");
+    printf("\t-h, --help        Display help message and exit\n");
+	printf("\t-p, --prefixes <list>  Comma-separated list of prefixes of PACKEDANCESTRYMAP files to merge\n");
+	printf("\t-P, --pams <list>      Comma-separated list of PACKEDANCESTRYMAP geno files to merge\n");
+	printf("\t-s, --snps <list>      Comma-separated list of PACKEDANCESTRYMAP SNP files to merge\n");
+	printf("\t-i, --inds <list>      Comma-separated list of PACKEDANCESTRYMAP individual files to merge\n");
+	printf("\t-o, --out <prefix>     Prefix of output PACKEDANCESTRYMAP files\n");
+	printf("\t--ignore-hash          Ignore PACKEDANCESTRYMAP hash check\n");
+	printf("\t--intersect-snps       Return files with the intersection of SNPs from all files, if this flag is not set it will use first file as SNP reference\n");
+	printf("\t--verbose              Print verbose output\n");
 }
 
 int main(int argc, char* argv[]) {
@@ -491,7 +501,7 @@ int main(int argc, char* argv[]) {
 		char** gsf;
 		switch(c) {
 			case 'h':
-				print_help();
+				print_help(argv[0]);
 				exit(EXIT_SUCCESS);
 			case 'p':
 				if(file_info.pam) {
