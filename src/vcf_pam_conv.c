@@ -274,8 +274,19 @@ void write_vcf(pam_file_reader* pfr, char* out_vcf, snp_data* snp, ind_data* ind
 }
 
 
-void print_help() {
-	printf("Help goes here!\n");
+void print_help(char* program) {
+	printf("Usage: %s [OPTIONS]\n", program);
+    printf("Options:\n");
+    printf("\t-h, --help                      Display help message and exit\n");
+    printf("\t-v, --vcf <filename>            VCF input file\n");
+	printf("\t-g, --geno <filename>           PACKEDANCESTRYMAP genotype file\n");
+	printf("\t-s, --snp <filename>            PACKEDANCESTRYMAP SNP file\n");
+	printf("\t-i, --ind <filename>            PACKEDANCESTRYMAP ind file\n");
+	printf("\t-s, --snp <prefix>              PACKEDANCESTRYMAP file prefix\n");
+	printf("\t-S, --sex <list>                Comma-separated list of sex IDs for VCF file individuals\n");
+	printf("\t-P, --pop <list>                Comma-separated list of population IDs for VCF file individuals\n");
+	printf("\t-o, --out-prefix <prefix>       Prefix for PACKEDANCESTRYMAP output\n");
+	printf("\t-O, --out-vcf <filename>        VCF output file\n");
 }
 
 void print_multiple_flag_error(char* flag) {
@@ -316,7 +327,7 @@ int main(int argc, char* argv[]) {
 		if(c == -1) { break; }
 		switch(c) {
 			case 'h':
-				print_help();
+				print_help(argv[0]);
 				exit(EXIT_SUCCESS);
 			case 'v':
 				if(in_vcf) {
@@ -433,7 +444,7 @@ int main(int argc, char* argv[]) {
 		free_snp_data(&snp);
 		close_pam_file_reader(&pfr);
 	} else if(in_vcf != NULL) {
-		// chekc that population information was provided
+		// check that population information was provided
 		if(pop == NULL) {
 			fprintf(stderr, "ERROR: --pop parameter must be provided to convert VCF to PACKEDANCESTRYMAP.\n");
 			exit(EXIT_FAILURE);
