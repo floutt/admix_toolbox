@@ -273,7 +273,6 @@ void write_vcf(pam_file_reader* pfr, char* out_vcf, snp_data* snp, ind_data* ind
 	fclose(f_out);
 }
 
-
 void print_help(char* program) {
 	printf("Usage: %s [OPTIONS]\n", program);
     printf("Options:\n");
