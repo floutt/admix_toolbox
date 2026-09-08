@@ -87,9 +87,8 @@ int main(int argc, char* argv[]) {
 	write_pam_header(&pfw, &snp, &ind);
 	uint8_t* record;
 	size_t max_i = (size_t)ceil((1.0 * snp.length) / n_snp);
-	print_progress("Converting", 0, max_i, 20);
 	for(size_t i = 0; i < max_i; i++) {
-		print_progress("Converting", i+1, max_i, 20);
+		print_progress("Converting", i, max_i, 20);
 		size_t offset = i * n_snp;
 		size_t n = MIN(n_snp, snp.length - offset);
 		uint8_t** snp_mat = (uint8_t**)malloc(n * sizeof(uint8_t*));
