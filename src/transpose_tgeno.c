@@ -35,10 +35,10 @@ int main(int argc, char* argv[]) {
 	char* out_geno = NULL;
 	size_t n_snp = 0;
 	static struct option long_options[] = {
-		{"prefix",       required_argument, NULL, 'p'},
-		{"out-geno",       required_argument, NULL, 'o'},
-		{"n-snp",          required_argument, NULL, 'n'},
-		{0,                0,                 0,      0}
+		{"prefix",   required_argument, NULL, 'p'},
+		{"out-geno", required_argument, NULL, 'o'},
+		{"n-snp",    required_argument, NULL, 'n'},
+		{0,          0,                 0,      0}
 	};
 
 	while(1) {
