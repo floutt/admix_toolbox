@@ -196,11 +196,11 @@ void write_geno(FILE* f_vcf, snp_data* snp, ind_data* ind, char* geno_file) {
 			char** samp_str_split = str_split(samp_str, ':', &n_fmt);
 			char* gt_str = samp_str_split[gt_pos];
 			uint8_t dosage;
-			if((strcmp("0/0", gt_str) == 0) || (strcmp("0|0", gt_str) == 0)) {
+			if((strcmp("0/0", gt_str) == 0) || (strcmp("0|0", gt_str) == 0) || (strcmp("0", gt_str) == 0)) {
 				dosage = 2;
 			} else if((strcmp("1/1", gt_str) == 0) || (strcmp("1|1", gt_str) == 0)) {
 				dosage = 0;
-			} else if((strcmp("1/0", gt_str) == 0) || (strcmp("1|0", gt_str) == 0) || (strcmp("0/1", gt_str) == 0) || (strcmp("0|1", gt_str) == 0)) {
+			} else if((strcmp("1/0", gt_str) == 0) || (strcmp("1|0", gt_str) == 0) || (strcmp("0/1", gt_str) == 0) || (strcmp("0|1", gt_str) == 0) || (strcmp("1", gt_str) == 0)) {
 				dosage = 1;
 			} else if((strcmp("./.", gt_str) == 0) || (strcmp(".", gt_str) == 0)) {
 				dosage = NAN_VAL;
