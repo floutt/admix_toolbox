@@ -202,7 +202,7 @@ void write_geno(FILE* f_vcf, snp_data* snp, ind_data* ind, char* geno_file) {
 				dosage = 0;
 			} else if((strcmp("1/0", gt_str) == 0) || (strcmp("1|0", gt_str) == 0) || (strcmp("0/1", gt_str) == 0) || (strcmp("0|1", gt_str) == 0) || (strcmp("1", gt_str) == 0)) {
 				dosage = 1;
-			} else if((strcmp("./.", gt_str) == 0) || (strcmp(".", gt_str) == 0)) {
+			} else if((strcmp("./.", gt_str) == 0) || (strcmp(".|.", gt_str) == 0) || (strcmp(".", gt_str) == 0)) {
 				dosage = NAN_VAL;
 			} else {
 				fprintf(stderr, "ERROR: invalid value '%s' in sample column of VCF.\n", gt_str);
