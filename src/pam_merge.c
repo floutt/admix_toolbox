@@ -132,18 +132,6 @@ bool all_equal(struct idx_node** arr, size_t length) {
 	return true; 
 }
 
-void print_isct(idx_intersect* isct) {
-	for(size_t i = 0; i < isct->length; i++) {
-		printf("Index %u:\n", i);
-		printf("\tIDX:");
-		struct idx_node* in;
-		TAILQ_FOREACH(in, isct->ip[i]->ref_idx, nodes) {
-			printf(" %u", in->idx);
-		}
-		printf("\n");
-	}
-}
-
 void make_intersection(idx_intersect* isct) {
 	// store the current nodes in array
 	struct idx_node** cur_nodes_ref = (struct idx_node**)malloc(isct->length * sizeof(struct idx_node*));
@@ -153,7 +141,6 @@ void make_intersection(idx_intersect* isct) {
 		cur_nodes_elm[i] = TAILQ_FIRST(isct->ip[i]->elm_idx);
 	}
 
-	print_isct(isct);
 	while(1) {
 		bool end_while = false;  // change value to exit while loop
 		// if all the nodes are equal then move on to the next elements
@@ -223,7 +210,6 @@ void make_intersection(idx_intersect* isct) {
 				cur_nodes_elm[i] = next_node_elm;
 			}
 		}
-		print_isct(isct);
 		if(end_while) {
 			free(cur_nodes_ref);
 			free(cur_nodes_elm);
