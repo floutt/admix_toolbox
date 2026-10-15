@@ -58,9 +58,9 @@ Options:
 ```
 
 ### transpose_geno
-`transpose_geno` is a program for converting a TGENO file to the more widely used PACKEDANCESTRYMAP format. While `convertf` (a part of the `AdmixTools` software) can do this task, it requires loading the entire TGENO file into memory. `transpose_geno` allows the user to adjust the amount of memory they seek to use in the conversion process through the `--n-snp` parameter. Higher values use more memory but run faster, lower values use less memory but run slower.
+`transpose_tgeno` is a program for converting a TGENO file to the more widely used PACKEDANCESTRYMAP format. While `convertf` (a part of the `AdmixTools` software) can do this task, it requires loading the entire TGENO file into memory. `transpose_tgeno` allows the user to adjust the amount of memory they seek to use in the conversion process through the `--n-snp` parameter. Higher values use more memory but run faster, lower values use less memory but run slower.
 
 The program can be run as follows:
 ```sh
-transpose_geno --prefix [TGENO PREFIX] --out-geno [OUTPUT PACKEDANCESTRYMAP FILE] --n-snp [NUMBER OF SNP RECORDS TO KEEP IN MEMORY]
+transpose_tgeno --prefix [TGENO PREFIX] --out-geno [OUTPUT PACKEDANCESTRYMAP FILE] --n-snp [NUMBER OF SNP RECORDS TO KEEP IN MEMORY]
 ```
